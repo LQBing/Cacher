@@ -7,7 +7,6 @@ import (
 	"cacher/rules"
 	"log"
 	"net/http"
-	"reflect"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,7 +41,20 @@ func cacheHandler(c *gin.Context) {
 	// cache hit
 	cache_item, ok := operator.GetCacheItem(rc, rule.CompareRule)
 	if ok {
-		c.Data(http.StatusOK, reflect.TypeOf(cache_item.Response.Body).String(), []byte(cache_item.Response.Body))
+		c.Data(http.StatusOK, cache_item.Response.Header.Get("Content-Type"), []byte(cache_item.Response.Body))
+		// replace header
+		for k := range c.Writer.Header() {
+			delete(c.Writer.Header(), k)
+		}
+		for k, v := range cache_item.Response.Header {
+			for i, vv := range v {
+				if i == 0 {
+					c.Writer.Header().Set(k, vv)
+				} else {
+					c.Writer.Header().Add(k, vv)
+				}
+			}
+		}
 		if configs.Config["debug"] != "" {
 			log.Println("hit " + rc.Url)
 		}
@@ -65,7 +77,22 @@ func cacheHandler(c *gin.Context) {
 			ramcache.Save(operator.GetCachePath())
 		}
 		// return response
-		c.Data(http.StatusOK, reflect.TypeOf(res.Body).String(), []byte(res.Body))
+		cache_item, _ := operator.GetCacheItem(rc, rule.CompareRule)
+		c.Data(http.StatusOK, cache_item.Response.Header.Get("Content-Type"), []byte(cache_item.Response.Body))
+		// replace header
+		for k := range c.Writer.Header() {
+			delete(c.Writer.Header(), k)
+		}
+		for k, v := range cache_item.Response.Header {
+			for i, vv := range v {
+				if i == 0 {
+					c.Writer.Header().Set(k, vv)
+				} else {
+					c.Writer.Header().Add(k, vv)
+				}
+			}
+		}
+
 		if configs.Config["debug"] != "" {
 			log.Println("call source url " + rc.Url)
 		}
