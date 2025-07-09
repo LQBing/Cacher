@@ -4,7 +4,6 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/jefferyjob/go-easy-utils/v2/anyUtil"
 	"github.com/ohler55/ojg/jp"
 	"github.com/ohler55/ojg/oj"
 )
@@ -16,24 +15,19 @@ func CompareBodyWithComparator(body1 any, body2 any, comparator Comparator) bool
 	if reflect.TypeOf(body1) != reflect.TypeOf(body2) { // not same type, return false
 		return false
 	}
-	if _, ok := body1.(string); ok { // string type, compare string
-		if body1 == body2 {
-			return true
-		} else {
-			return false
-		}
-	}
+	bb1 := string(body1.([]byte))
+	bb2 := string(body2.([]byte))
 	// remove ignore items
-	b1, _ := oj.ParseString(anyUtil.AnyToStr(body1))
-	b2, _ := oj.ParseString(anyUtil.AnyToStr(body2))
+	b1, _ := oj.ParseString(bb1)
+	b2, _ := oj.ParseString(bb2)
 	if len(comparator.Ignore) > 0 {
 		for _, ignore := range comparator.Ignore {
 			x, err := jp.ParseString(ignore)
 			if err != nil {
 				log.Panicln(err.Error())
 			}
-			b1 = x.Del(b1)
-			b2 = x.Del(b2)
+			x.Del(b1)
+			x.Del(b2)
 		}
 	}
 	// compare body
