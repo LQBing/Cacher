@@ -17,6 +17,7 @@ var Config map[string]string
 func Init() error {
 	Config = make(map[string]string)
 	Config["debug"] = utils.Getenv("DEBUG", "")
+	Config["debug_body"] = utils.Getenv("DEBUG_BODY", "")
 	Config["host"] = utils.Getenv("HOST", "0.0.0.0")
 	Config["port"] = utils.Getenv("PORT", "80")
 	Config["cache_type"] = utils.Getenv("CACHE_TYPE", "local")

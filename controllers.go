@@ -58,6 +58,10 @@ func cacheHandler(c *gin.Context) {
 		if configs.Config["debug"] != "" {
 			log.Println("hit " + rc.Url)
 		}
+		if configs.Config["debug_body"] != "" {
+			log.Println("req body: " + string(rc.Body))
+			log.Println("resp body: " + string(cache_item.Response.Body))
+		}
 		return
 	}
 	// no cache, request and cache
