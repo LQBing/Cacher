@@ -7,6 +7,7 @@ import (
 	"cacher/rules"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,12 +18,68 @@ func cacheHandler(c *gin.Context) {
 		return
 	}
 	// ineternal apis
-	if c.Request.URL.Path == configs.Config["API_PATH"]+"/rules" {
+	if c.Request.URL.Path == configs.Config["API_PATH"]+"/rules/get" {
 		c.JSON(http.StatusOK, rules.RULES)
 		return
 	}
-	if c.Request.URL.Path == configs.Config["API_PATH"]+"/caches" {
-		c.JSON(http.StatusOK, ramcache.RAM_CACHE)
+	if c.Request.URL.Path == configs.Config["API_PATH"]+"/caches/get" {
+		path := c.Query("path")
+		method := strings.ToUpper(c.Query("method"))
+		if path == "" {
+			c.JSON(http.StatusOK, ramcache.RAM_CACHE)
+			return
+		} else {
+			if _, ok := ramcache.RAM_CACHE[path]; ok {
+				if method == "" || method == "ALL" {
+					c.JSON(http.StatusOK, ramcache.RAM_CACHE[path])
+					return
+				} else {
+					if _, ok := ramcache.RAM_CACHE[path][method]; ok {
+						c.JSON(http.StatusOK, ramcache.RAM_CACHE[path][method])
+						return
+					}
+				}
+			}
+		}
+		c.JSON(http.StatusOK, "")
+		return
+	}
+	if c.Request.URL.Path == configs.Config["API_PATH"]+"/caches/list" {
+		path := c.Query("path")
+		if path == "" {
+			var paths []string
+			for p := range ramcache.RAM_CACHE {
+				paths = append(paths, p)
+			}
+			c.JSON(http.StatusOK, paths)
+			return
+		} else {
+			if _, ok := ramcache.RAM_CACHE[path]; ok {
+				var methods []string
+				for m := range ramcache.RAM_CACHE[path] {
+					methods = append(methods, m)
+				}
+				c.JSON(http.StatusOK, methods)
+				return
+			}
+		}
+		c.JSON(http.StatusOK, "")
+		return
+	}
+	if c.Request.URL.Path == configs.Config["API_PATH"]+"/caches/del" {
+		path := c.Query("path")
+		method := strings.ToUpper(c.Query("method"))
+		if _, ok1 := ramcache.RAM_CACHE[path]; ok1 {
+			if method == "" {
+				delete(ramcache.RAM_CACHE, path)
+				ramcache.Save(operator.GetCachePath())
+			}
+			if _, ok2 := ramcache.RAM_CACHE[path][method]; ok2 {
+				delete(ramcache.RAM_CACHE[path], path)
+				ramcache.Save(operator.GetCachePath())
+			}
+		}
+		c.JSON(http.StatusBadRequest, "not fond caches")
 		return
 	}
 	// create request cache
